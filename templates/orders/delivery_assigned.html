@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block title %}Assigned Deliveries - Kritajna{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header"><h3>Assigned Orders</h3></div>
+            <div class="card-body">
+                {% if orders %}
+                    <ul class="list-group">
+                        {% for order in orders %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>Order #{{ order.id }}</strong>
+                                <div>Customer: {{ order.customer.username }}</div>
+                                <div>Total: ₹{{ order.total_amount }} | Delivery: ₹{{ order.delivery_charge }}</div>
+                            </div>
+                            <div>
+                                {% if order.delivery_partner == user and order.status == 'confirmed' %}
+                                    <a href="{% url 'respond_delivery' order.id 'accept' %}" class="btn btn-success btn-sm">Accept</a>
+                                    <a href="{% url 'respond_delivery' order.id 'reject' %}" class="btn btn-danger btn-sm">Reject</a>
+                                {% else %}
+                                    <!-- No actions available; show status -->
+                                    <span class="badge bg-secondary">{{ order.get_status_display }}</span>
+                                {% endif %}
+                                <a href="{% url 'order_detail' order.id %}" class="btn btn-secondary btn-sm">Details</a>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>No assigned orders.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,223 @@
+{% extends 'base.html' %}
+
+{% block title %}Order #{{ order.id }} - Kritajna{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1>Order #{{ order.id }}</h1>
+        <p class="text-muted">Placed on {{ order.created_at|date:"M d, Y H:i" }}</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <!-- Order Items -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="mb-0">Order Items</h3>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Quantity</th>
+                            <th>Price</th>
+                            <th>Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in order.items.all %}
+                            <tr>
+                                <td>{{ item.product.name }}</td>
+                                <td>{{ item.quantity }}</td>
+                                <td>
+                                    ₹{{ item.price_per_unit }} / 
+                                    {% if item.product.unit_obj %}{{ item.product.unit_obj.code|default:item.product.unit_obj.name }}{% else %}{{ item.product.unit }}{% endif %}
+                                </td>
+                                <td>₹{{ item.get_subtotal }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                
+                <hr>
+                
+                <div class="row">
+                    <div class="col-md-6 offset-md-6">
+                        <table class="table table-sm">
+                            <tr>
+                                <td>Subtotal:</td>
+                                <td class="text-right">
+                                    ₹{% widthratio order.total_amount order.delivery_charge|add:order.total_amount 100 %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Delivery Charge:</td>
+                                <td class="text-right">₹{{ order.delivery_charge }}</td>
+                            </tr>
+                            <tr class="table-active">
+                                <td><strong>Total:</strong></td>
+                                <td class="text-right"><strong>₹{{ order.total_amount|add:order.delivery_charge }}</strong></td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Delivery Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="mb-0">Delivery Information</h3>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Delivery Address:</strong><br>
+                        {{ order.customer_location }}
+                    </div>
+                    <div class="col-md-6">
+                        {% if order.delivery_partner %}
+                            <strong>Delivery Partner:</strong><br>
+                            {{ order.delivery_partner.username }}<br>
+                            <small class="text-muted">{{ order.delivery_partner.phone_number }}</small>
+                        {% else %}
+                            <strong>Delivery Partner:</strong><br>
+                            <span class="badge bg-warning">Not Assigned</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if user == order.delivery_partner %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Pickup Locations:</strong><br>
+                            {% for item in order.items.all %}
+                                <div class="mb-2">
+                                    <strong>{{ item.product.farmer.username }}</strong><br>
+                                    {{ item.product.farmer.location }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Order Status -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="mb-0">Order Status</h3>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-{% if order.status == 'delivered' %}success{% elif order.status == 'pending' %}warning{% elif order.status == 'in_delivery' %}info{% else %}danger{% endif %}">
+                    <h4>{{ order.get_status_display }}</h4>
+                </div>
+                
+                {% if user == order.delivery_partner and order.status != 'delivered' and order.status != 'cancelled' %}
+                    <div class="btn-group-vertical w-100">
+                        {% if order.status == 'pending' %}
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#confirmPickup">Confirm Pickup</button>
+                        {% elif order.status == 'in_delivery' %}
+                            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#confirmDelivery">Confirm Delivery</button>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Order Summary -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Order Summary</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Order ID:</strong> #{{ order.id }}</p>
+                <p><strong>Customer:</strong> {{ order.customer.username }}</p>
+                <p><strong>Items:</strong> {{ order.items.count }}</p>
+                <p><strong>Order Date:</strong> {{ order.created_at|date:"M d, Y" }}</p>
+                <p><strong>Last Updated:</strong> {{ order.updated_at|date:"M d, Y H:i" }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <a href="javascript:history.back()" class="btn btn-secondary">← Go Back</a>
+    </div>
+</div>
+
+<!-- Messages -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Messages</h5>
+            </div>
+            <div class="card-body">
+                {% for msg in order.messages.all %}
+                    <div class="mb-3">
+                        <strong>{{ msg.sender.username }}</strong>
+                        <small class="text-muted"> · {{ msg.created_at|date:"M d, Y H:i" }}</small>
+                        <div>{{ msg.content }}</div>
+                    </div>
+                {% empty %}
+                    <p class="text-muted">No messages yet.</p>
+                {% endfor %}
+
+                {% if can_message %}
+                    <form method="post" action="{% url 'post_order_message' order.pk %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <textarea name="message" class="form-control" rows="3" placeholder="Write a message..."></textarea>
+                        </div>
+                        <button class="btn btn-primary">Send</button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals -->
+<div class="modal fade" id="confirmPickup" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Pickup</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                Have you picked up the items from all farmers?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a href="{% url 'update_order_status' order.pk 'in_delivery' %}" class="btn btn-primary">Yes, Start Delivery</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="confirmDelivery" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delivery</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                Have you delivered the items to the customer at {{ order.customer_location }}?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a href="{% url 'update_order_status' order.pk 'delivered' %}" class="btn btn-success">Yes, Mark as Delivered</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

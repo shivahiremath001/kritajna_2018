@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - Kritajna{% endblock %}
+
+{% block content %}
+<div class="jumbotron bg-light p-5 rounded-lg">
+    <h1 class="display-4">Welcome to Kritajna</h1>
+    <p class="lead">Your local commerce platform connecting farmers, customers, and delivery partners.</p>
+    <hr class="my-4">
+    <form method="get" action="{% url 'search_results' %}" class="mb-3">
+        <div class="input-group">
+            <input type="text" name="q" class="form-control" placeholder="Search products, descriptions, categories...">
+            <button class="btn btn-primary" type="submit">Search</button>
+        </div>
+    </form>
+    
+    {% if user.is_authenticated %}
+        <p>Welcome back, <strong>{{ user.username }}</strong>!</p>
+        {% if user.role == 'customer' %}
+            <a class="btn btn-primary btn-lg" href="{% url 'browse_products' %}" role="button">Browse Products</a>
+            <a class="btn btn-secondary btn-lg" href="{% url 'customer_dashboard' %}" role="button">My Orders</a>
+        {% elif user.role == 'farmer' %}
+            <a class="btn btn-primary btn-lg" href="{% url 'farmer_dashboard' %}" role="button">My Dashboard</a>
+            <a class="btn btn-success btn-lg" href="{% url 'add_product' %}" role="button">Add New Product</a>
+        {% elif user.role == 'delivery_partner' %}
+            <a class="btn btn-primary btn-lg" href="{% url 'delivery_dashboard' %}" role="button">View Deliveries</a>
+        {% endif %}
+    {% else %}
+        <p>Get started by creating an account or browsing our products.</p>
+        <a class="btn btn-primary btn-lg" href="{% url 'browse_products' %}" role="button">Browse Products</a>
+        <a class="btn btn-success btn-lg" href="{% url 'signup' %}" role="button">Create Account</a>
+        <a class="btn btn-info btn-lg" href="{% url 'login' %}" role="button">Login</a>
+    {% endif %}
+</div>
+
+<div class="row mt-5">
+    <div class="col-12 mb-4">
+        <h3>Shop by Category</h3>
+        <div class="category-slider d-flex overflow-auto py-2">
+            {% for cat in categories %}
+                <a class="category-item text-center me-3" href="{% url 'category_detail' cat.slug %}" style="min-width:140px; text-decoration:none; color:inherit;">
+                    <div class="card shadow-sm">
+                        {% if cat.image %}
+                            <img src="{{ cat.image.url }}" class="card-img-top" style="height:100px; object-fit:cover;">
+                        {% else %}
+                            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height:100px;">📦</div>
+                        {% endif %}
+                        <div class="card-body p-2">
+                            <small>{{ cat.name }}</small>
+                        </div>
+                    </div>
+                </a>
+            {% empty %}
+                <p class="text-muted">No categories yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">👨‍🌾 For Farmers</h5>
+                <p class="card-text">List your produce and reach customers directly. Manage orders and track sales easily.</p>
+                {% if not user.is_authenticated %}
+                    <a href="{% url 'signup' %}" class="btn btn-primary">Join as Farmer</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">👥 For Customers</h5>
+                <p class="card-text">Browse fresh produce from local farmers and get fast delivery to your doorstep.</p>
+                {% if not user.is_authenticated %}
+                    <a href="{% url 'signup' %}" class="btn btn-primary">Join as Customer</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">🚚 For Delivery Partners</h5>
+                <p class="card-text">Earn money by delivering orders. Flexible timings and transparent earnings.</p>
+                {% if not user.is_authenticated %}
+                    <a href="{% url 'signup' %}" class="btn btn-primary">Join as Partner</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-lg-12">
+        <h2>How Kritajna Works</h2>
+        <ol>
+            <li><strong>Farmers</strong> list their fresh produce on our platform with subscription</li>
+            <li><strong>Customers</strong> browse and order directly from local farmers</li>
+            <li><strong>Delivery Partners</strong> pick up from farmers and deliver to customers</li>
+            <li><strong>Everyone</strong> gets transparent pricing and earnings tracking</li>
+        </ol>
+    </div>
+</div>
+{% endblock %}

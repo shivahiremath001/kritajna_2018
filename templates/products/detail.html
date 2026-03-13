@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ product.name }} - Kritajna{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6">
+        {% if product.image %}
+            <img src="{{ product.image.url }}" class="img-fluid rounded" alt="{{ product.name }}">
+        {% else %}
+            <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 400px;">
+                <span class="text-muted">📦 No Image Available</span>
+            </div>
+        {% endif %}
+    </div>
+    
+    <div class="col-md-6">
+        <h1>{{ product.name }}</h1>
+        
+        <div class="card mb-3">
+            <div class="card-body">
+                <h3 class="card-title">
+                    {% if product.price_per_unit and product.price_per_unit > 0 %}
+                        ₹{{ product.price_per_unit }} / {% if product.unit_obj %}{{ product.unit_obj.code|default:product.unit_obj.name }}{% else %}{{ product.unit }}{% endif %}
+                    {% else %}
+                        ₹{{ product.price }}
+                    {% endif %}
+                </h3>
+                
+                <p class="card-text">{{ product.description }}</p>
+                
+                <hr>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Farmer:</strong> {{ product.farmer.username }}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Location:</strong> {{ product.location }}
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Quantity in Stock:</strong> {{ product.quantity }}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Status:</strong>
+                        {% if product.sold_out %}
+                            <span class="badge bg-danger">Sold Out</span>
+                        {% else %}
+                            <span class="badge bg-success">Available</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if user.is_authenticated and user.role == 'customer' and not product.sold_out %}
+                    <form method="post" action="{% url 'create_order' %}">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="quantity" class="form-label">Quantity:</label>
+                            <input type="number" id="quantity" name="quantity" step="0.01" min="0.01" max="{{ product.quantity }}" value="1" class="form-control" required>
+                            <input type="hidden" name="product_id" value="{{ product.id }}">
+                        </div>
+                        
+                        <button type="submit" class="btn btn-success btn-lg w-100">Add to Order</button>
+                    </form>
+                {% elif not user.is_authenticated %}
+                    <p class="alert alert-info">
+                        <a href="{% url 'login' %}">Login</a> or <a href="{% url 'signup' %}">sign up</a> as a customer to order this product.
+                    </p>
+                {% elif product.sold_out %}
+                    <p class="alert alert-warning">This product is currently sold out.</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Farmer Information</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Name:</strong> {{ product.farmer.get_full_name|default:product.farmer.username }}</p>
+                <p><strong>Phone:</strong> {{ product.farmer.phone_number|default:"Not provided" }}</p>
+                <p><strong>Location:</strong> {{ product.farmer.location }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <a href="{% url 'browse_products' %}" class="btn btn-secondary">← Back to Products</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title %}Farmer Subscription - Kritajna{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">Choose Your Subscription Plan</h3>
+            </div>
+            <div class="card-body">
+                <p class="lead">Welcome to Kritajna, {{ user.first_name }}! To start selling your produce, please choose a subscription plan.</p>
+                
+                <form method="post" class="subscription-form">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        {% for value, label in form.subscription_plan.field.choices %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card subscription-card">
+                                    <div class="card-body text-center">
+                                        <input type="radio" name="subscription_plan" value="{{ value }}" id="plan_{{ value }}" required>
+                                        <label for="plan_{{ value }}" class="subscription-label">
+                                            <h5>{{ label }}</h5>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <strong>Note:</strong> Your subscription fee will be deducted from your account and will be visible in the Django Admin Panel for tracking purposes.
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success btn-lg w-100">Subscribe Now</button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">Subscription Benefits</h5>
+            </div>
+            <div class="card-body">
+                <ul>
+                    <li>List unlimited products on Kritajna</li>
+                    <li>Reach thousands of local customers</li>
+                    <li>Manage orders and payments easily</li>
+                    <li>Track your sales and earnings</li>
+                    <li>Get 24/7 customer support</li>
+                    <li>Secure payment processing</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .subscription-card {
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid #ddd;
+    }
+    
+    .subscription-card:hover {
+        border-color: #0d6efd;
+        box-shadow: 0 0 10px rgba(13, 110, 253, 0.2);
+    }
+    
+    input[type="radio"]:checked + .subscription-label {
+        color: #0d6efd;
+        font-weight: bold;
+    }
+    
+    .subscription-label {
+        cursor: pointer;
+        margin: 0;
+        display: block;
+    }
+</style>
+{% endblock %}

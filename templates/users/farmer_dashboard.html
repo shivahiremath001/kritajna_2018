@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+
+{% block title %}Farmer Dashboard - Kritajna{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1>My Farmer Dashboard</h1>
+        <p class="text-muted">Farmer ID: {{ user.farmer_id }} | Location: {{ user.location }}</p>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title">Total Orders</h5>
+                <h2>{{ total_orders }}</h2>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title">Total Sales</h5>
+                <h2>₹{{ total_sales }}</h2>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <h5 class="card-title">Pending Orders</h5>
+                <h2>{{ pending_orders }}</h2>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h5 class="card-title">Subscription Amount</h5>
+                <h2>₹{{ user.subscription_amount }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- My Products Section -->
+<div class="card mb-4">
+    <div class="card-header">
+        <div class="row align-items-center">
+            <div class="col">
+                <h3 class="mb-0">My Products</h3>
+            </div>
+            <div class="col-auto">
+                <a href="{% url 'add_product' %}" class="btn btn-success">+ Add New Product</a>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if products %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Product Name</th>
+                            <th>Price</th>
+                            <th>Quantity</th>
+                            <th>Location</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products %}
+                            <tr>
+                                <td>{{ product.name }}</td>
+                                <td>
+                                    {% if product.price_per_unit and product.price_per_unit > 0 %}
+                                        ₹{{ product.price_per_unit }} / {% if product.unit_obj %}{{ product.unit_obj.code|default:product.unit_obj.name }}{% else %}{{ product.unit }}{% endif %}
+                                    {% else %}
+                                        ₹{{ product.price }}
+                                    {% endif %}
+                                </td>
+                                <td>{{ product.quantity }}</td>
+                                <td>{{ product.location }}</td>
+                                <td>
+                                    {% if product.sold_out %}
+                                        <span class="badge bg-danger">Sold Out</span>
+                                    {% else %}
+                                        <span class="badge bg-success">Available</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'edit_product' product.pk %}" class="btn btn-sm btn-primary">Edit</a>
+                                    <a href="{% url 'delete_product' product.pk %}" class="btn btn-sm btn-danger">Delete</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted">No products yet. <a href="{% url 'add_product' %}">Add your first product</a></p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Orders Section -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h3 class="mb-0">Recent Orders</h3>
+    </div>
+    <div class="card-body">
+        {% if orders %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Customer</th>
+                            <th>Total Amount</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                            <tr>
+                                <td>#{{ order.id }}</td>
+                                <td>{{ order.customer.username }}</td>
+                                <td>₹{{ order.total_amount }}</td>
+                                <td>
+                                    <span class="badge bg-{% if order.status == 'delivered' %}success{% elif order.status == 'pending' %}warning{% else %}info{% endif %}">
+                                        {{ order.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>{{ order.created_at|date:"M d, Y" }}</td>
+                                <td>
+                                    <a href="{% url 'order_detail' order.pk %}" class="btn btn-sm btn-info">View</a>
+                                    {% if order.status == 'pending' %}
+                                        <form method="post" action="{% url 'farmer_accept_order' order.pk %}" style="display:inline-block; margin-left:6px;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-success">Accept</button>
+                                        </form>
+                                        <form method="post" action="{% url 'farmer_reject_order' order.pk %}" style="display:inline-block; margin-left:6px;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-danger">Reject</button>
+                                        </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted">No orders yet.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Payment History Section -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="mb-0">Payment History</h3>
+    </div>
+    <div class="card-body">
+        {% if payments %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payment in payments %}
+                            <tr>
+                                <td>{{ payment.date|date:"M d, Y H:i" }}</td>
+                                <td>{{ payment.get_payment_type_display }}</td>
+                                <td>₹{{ payment.amount }}</td>
+                                <td>{{ payment.description }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted">No payment history.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block title %}Browse Products - Kritajna{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1>Browse Fresh Produce</h1>
+    </div>
+</div>
+
+<!-- Search and Filter -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-6">
+                <input type="text" name="q" class="form-control" placeholder="Search products..." value="{{ query }}">
+            </div>
+            <div class="col-md-4">
+                <input type="text" name="location" class="form-control" placeholder="Search by location..." value="{{ location }}">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100" style="background-color: green; border: none;">Search</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Products Grid -->
+<div class="row">
+    {% if products %}
+        {% for product in products %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    {% if product.image %}
+                        <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}" style="height: 200px; object-fit: cover;">
+                    {% else %}
+                        <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                            <span class="text-muted">📦 No Image</span>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="card-body">
+                        <h5 class="card-title">{{ product.name }}</h5>
+                        <p class="card-text text-muted">{{ product.description|truncatewords:15 }}</p>
+                        
+                        <div class="row mb-2">
+                            <div class="col">
+                                <strong>Price:</strong>
+                                    {% if product.price_per_unit and product.price_per_unit > 0 %}
+                                        ₹{{ product.price_per_unit }} / {% if product.unit_obj %}{{ product.unit_obj.code|default:product.unit_obj.name }}{% else %}{{ product.unit }}{% endif %}
+                                    {% else %}
+                                        ₹{{ product.price }}
+                                    {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-2">
+                            <div class="col">
+                                <strong>Farmer:</strong> {{ product.farmer.username }}
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col">
+                                <strong>Category:</strong>
+                                {% if product.category %}{{ product.category.name }}{% else %}—{% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-2">
+                            <div class="col">
+                                <strong>Location:</strong> {{ product.location }}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col">
+                                {% if product.sold_out %}
+                                    <span class="badge bg-danger">Sold Out</span>
+                                {% else %}
+                                    <span class="badge bg-success">Available ({{ product.quantity }} in stock)</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-footer">
+                        <a href="{% url 'product_detail' product.pk %}" class="btn btn-primary w-100" style="background-color: green; border: none;">View Details</a>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="col-md-12">
+            <div class="alert alert-info text-center">
+                <h4>No products found</h4>
+                <p>{% if query or location %}Try adjusting your search filters{% else %}Check back soon for fresh produce!{% endif %}</p>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

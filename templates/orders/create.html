@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Order - Kritajna{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header"><h3>Create Order</h3></div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    {{ form.non_field_errors }}
+
+                    <!-- Render order form fields (address/delivery charge/etc) -->
+                    <div class="mb-3">
+                        {{ form.as_p }}
+                    </div>
+
+                    <h5>Available Products</h5>
+                    <p>Select quantities for products you want to order (leave 0 to skip).</p>
+
+                    <div class="list-group mb-3">
+                        {% for product in products %}
+                        <div class="list-group-item d-flex align-items-center">
+                            <div class="me-3" style="width:80px;">
+                                {% if product.image %}
+                                    <img src="{{ product.image.url }}" alt="{{ product.name }}" style="max-width:100%; height:auto;">
+                                {% endif %}
+                            </div>
+                            <div class="flex-grow-1">
+                                <strong>{{ product.name }}</strong>
+                                <div>
+                                    {% if product.price_per_unit and product.price_per_unit > 0 %}
+                                        Price: ₹{{ product.price_per_unit }} / {% if product.unit_obj %}{{ product.unit_obj.code|default:product.unit_obj.name }}{% else %}{{ product.unit }}{% endif %}
+                                    {% else %}
+                                        Price: ₹{{ product.price }}
+                                    {% endif %}
+                                </div>
+                                <div>Available: {{ product.quantity }}</div>
+                            </div>
+                            <div class="text-end">
+                                <input type="hidden" name="product_id" value="{{ product.id }}">
+                                <label class="form-label">Qty</label>
+                                <input type="number" step="0.01" name="quantity" value="0" min="0" max="{{ product.quantity }}" class="form-control" style="width:80px;">
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="list-group-item">No products available.</div>
+                        {% endfor %}
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Place Order</button>
+                    <a href="{% url 'browse_products' %}" class="btn btn-secondary">Back</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .list-group-item { display:flex; gap:1rem; align-items:center; }
+    input[type="number"] { width:4.5rem; }
+</style>
+
+{% endblock %}

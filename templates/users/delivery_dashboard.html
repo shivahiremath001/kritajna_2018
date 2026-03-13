@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+
+{% block title %}Delivery Partner Dashboard - Kritajna{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1>My Deliveries</h1>
+        <p class="text-muted">Location: {{ user.location }}</p>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title">Total Deliveries</h5>
+                <h2>{{ total_deliveries }}</h2>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title">Total Earnings</h5>
+                <h2>₹{{ total_earnings }}</h2>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <h5 class="card-title">Pending Deliveries</h5>
+                <h2>{{ pending_deliveries }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Assigned Orders Section -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="mb-0">Assigned Orders</h3>
+    </div>
+    <div class="card-body">
+        {% if orders %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Customer</th>
+                            <th>Farmer</th>
+                            <th>Total Amount</th>
+                            <th>Delivery Charge</th>
+                            <th>Status</th>
+                            <th>Pickup Location</th>
+                            <th>Delivery Location</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                            <tr>
+                                <td><strong>#{{ order.id }}</strong></td>
+                                <td>{{ order.customer.username }}</td>
+                                <td>
+                                    {% for item in order.items.all %}
+                                        <div>{{ item.product.farmer.username }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>₹{{ order.total_amount }}</td>
+                                <td>₹{{ order.delivery_charge }}</td>
+                                <td>
+                                    <span class="badge bg-{% if order.status == 'delivered' %}success{% elif order.status == 'pending' %}warning{% elif order.status == 'in_delivery' %}info{% else %}danger{% endif %}">
+                                        {{ order.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% for item in order.items.all|dictsort:"product.farmer" %}
+                                        <div><small>{{ item.product.farmer.location }}</small></div>
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    <div><strong>{{ order.customer_location }}</strong></div>
+                                </td>
+                                <td>
+                                    <a href="{% url 'order_detail' order.pk %}" class="btn btn-sm btn-info">View Details</a>
+                                    {% if order.status != 'delivered' and order.status != 'cancelled' %}
+                                        <div class="btn-group mt-2" role="group">
+                                            {% if order.status == 'pending' %}
+                                                <a href="{% url 'update_order_status' order.pk 'in_delivery' %}" class="btn btn-sm btn-primary">Start Delivery</a>
+                                            {% elif order.status == 'in_delivery' %}
+                                                <a href="{% url 'update_order_status' order.pk 'delivered' %}" class="btn btn-sm btn-success">Mark Delivered</a>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted text-center">No orders assigned yet. Check back soon!</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Earnings Section -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h3 class="mb-0">Earnings Summary</h3>
+    </div>
+    <div class="card-body">
+        <p>Average delivery charge: <strong>₹{{ delivery_charge|default:"50" }}</strong></p>
+        <p>Total delivered orders: <strong>{{ total_deliveries }}</strong></p>
+        <p>Total earnings: <strong>₹{{ total_earnings }}</strong></p>
+    </div>
+</div>
+{% endblock %}

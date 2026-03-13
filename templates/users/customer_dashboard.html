@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block title %}Customer Dashboard - Kritajna{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1>My Orders</h1>
+        <p class="text-muted">Location: {{ user.location }}</p>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title">Total Orders</h5>
+                <h2>{{ total_orders }}</h2>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title">Total Spent</h5>
+                <h2>₹{{ total_spent }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Orders Section -->
+<div class="card">
+    <div class="card-header">
+        <div class="row align-items-center">
+            <div class="col">
+                <h3 class="mb-0">My Orders</h3>
+            </div>
+            <div class="col-auto">
+                <a href="{% url 'browse_products' %}" class="btn btn-primary">Browse Products</a>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if orders %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Items</th>
+                            <th>Total Amount</th>
+                            <th>Delivery Charge</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                            <tr>
+                                <td>#{{ order.id }}</td>
+                                <td>
+                                    {% for item in order.items.all %}
+                                        <div>{{ item.product.name }} (x{{ item.quantity }})</div>
+                                    {% endfor %}
+                                </td>
+                                <td>₹{{ order.total_amount }}</td>
+                                <td>₹{{ order.delivery_charge }}</td>
+                                <td>
+                                    <span class="badge bg-{% if order.status == 'delivered' %}success{% elif order.status == 'pending' %}warning{% elif order.status == 'in_delivery' %}info{% else %}danger{% endif %}">
+                                        {{ order.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>{{ order.created_at|date:"M d, Y" }}</td>
+                                <td>
+                                    <a href="{% url 'order_detail' order.pk %}" class="btn btn-sm btn-info">View</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted text-center">No orders yet. <a href="{% url 'browse_products' %}">Start shopping</a></p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

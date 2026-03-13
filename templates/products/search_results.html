@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}Search results for "{{ query }}" - Kritajna{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1>Search results for "{{ query }}"</h1>
+    </div>
+</div>
+
+<div class="row">
+    {% if products %}
+        {% for product in products %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    {% if product.image %}
+                        <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}" style="height:200px;object-fit:cover;">
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ product.name }}</h5>
+                        <p class="card-text text-muted">{{ product.description|truncatewords:15 }}</p>
+                        <div>
+                            <strong>Price:</strong>
+                            {% if product.price_per_unit and product.price_per_unit > 0 %}
+                                ₹{{ product.price_per_unit }} / {% if product.unit_obj %}{{ product.unit_obj.code|default:product.unit_obj.name }}{% else %}{{ product.unit }}{% endif %}
+                            {% else %}
+                                ₹{{ product.price }}
+                            {% endif %}
+                        </div>
+                        <div><strong>Category:</strong> {% if product.category %}{{ product.category.name }}{% else %}—{% endif %}</div>
+                    </div>
+                    <div class="card-footer">
+                        <a href="{% url 'product_detail' product.pk %}" class="btn btn-primary w-100">View Details</a>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="col-md-12">
+            <div class="alert alert-info">No products match your search.</div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
