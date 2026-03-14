@@ -25,6 +25,8 @@
                             <th>Quantity</th>
                             <th>Price</th>
                             <th>Subtotal</th>
+                            <th>Status</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -37,6 +39,21 @@
                                     {% if item.product.unit_obj %}{{ item.product.unit_obj.code|default:item.product.unit_obj.name }}{% else %}{{ item.product.unit }}{% endif %}
                                 </td>
                                 <td>₹{{ item.get_subtotal }}</td>
+                                <td>{{ item.get_status_display }}</td>
+                                <td>
+                                    {% if user.role == 'farmer' and item.product.farmer == user and item.status == 'pending' %}
+                                        <form method="post" action="{% url 'farmer_accept_item' item.pk %}" style="display:inline">
+                                            {% csrf_token %}
+                                            <button class="btn btn-sm btn-success">Accept</button>
+                                        </form>
+                                        <form method="post" action="{% url 'farmer_reject_item' item.pk %}" style="display:inline">
+                                            {% csrf_token %}
+                                            <button class="btn btn-sm btn-danger">Reject</button>
+                                        </form>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
                             </tr>
                         {% endfor %}
                     </tbody>

@@ -4,6 +4,10 @@ from django.contrib import messages
 from django.db.models import Q
 from .models import Product, Category
 from .forms import ProductForm
+from django.contrib import messages
+from django.shortcuts import redirect
+from django.contrib.auth.decorators import login_required
+from orders.models import Cart
 
 
 def browse_products(request):
@@ -55,6 +59,25 @@ def product_detail(request, pk):
     product = get_object_or_404(Product, pk=pk)
     context = {'product': product}
     return render(request, 'products/detail.html', context)
+
+
+@login_required(login_url='login')
+def add_to_cart(request, pk):
+    """Add a product to the current user's cart."""
+    product = get_object_or_404(Product, pk=pk)
+    if request.user.role != 'customer':
+        messages.error(request, 'Only customers can add products to cart')
+        return redirect('product_detail', pk=pk)
+
+    cart, _ = Cart.objects.get_or_create(user=request.user)
+    qty = request.POST.get('quantity', '1') if request.method == 'POST' else request.GET.get('quantity', '1')
+    try:
+        cart.add_product(product, qty)
+        messages.success(request, f'Added {product.name} to cart')
+    except Exception:
+        messages.error(request, 'Could not add product to cart')
+
+    return redirect('browse_products')
 
 
 @login_required(login_url='login')
