@@ -36,6 +36,14 @@
                             <li class="nav-item">
                                 <a class="nav-link" href="{% url 'customer_dashboard' %}">My Orders</a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'cart_view' %}">
+                                    Cart
+                                    {% if cart_item_count and cart_item_count > 0 %}
+                                        <span class="badge bg-danger ms-1">{{ cart_item_count }}</span>
+                                    {% endif %}
+                                </a>
+                            </li>
                         {% elif user.role == 'delivery_partner' %}
                             <li class="nav-item">
                                 <a class="nav-link" href="{% url 'delivery_orders' %}">My Deliveries</a>
