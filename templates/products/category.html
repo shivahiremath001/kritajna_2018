@@ -31,7 +31,7 @@
                         <div><strong>Category:</strong> {% if product.category %}{{ product.category.name }}{% else %}—{% endif %}</div>
                     </div>
                     <div class="card-footer">
-                        <a href="{% url 'product_detail' product.pk %}" class="btn btn-primary w-100">View Details</a>
+                        <a href="{% url 'product_detail' product.pk %}" class="btn btn-primary w-100" style="background-color: green; border: none;">View Details</a>
                     </div>
                 </div>
             </div>

@@ -1,7 +1,7 @@
 /* Kritajna Commerce Platform - Custom Styles */
 
 :root {
-    --primary-color: #0d6efd;
+    --primary-color: rgb(8, 207, 8);
     --secondary-color: #6c757d;
     --success-color: #198754;
     --danger-color: #dc3545;
@@ -42,7 +42,7 @@ body {
 
 .card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    box-shadow: 0 0.5rem 1rem rgba(4, 182, 13, 0.15);
 }
 
 .card-header {
@@ -64,8 +64,8 @@ body {
 }
 
 .btn-primary:hover {
-    background-color: #0b5ed7;
-    border-color: #0b5ed7;
+    background-color: green;
+    border-color: #3dda0d;
     transform: translateY(-1px);
 }
 
@@ -83,7 +83,7 @@ textarea {
 .form-select:focus,
 textarea:focus {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    box-shadow: 0 0 0 0.2rem rgba(13, 253, 53, 0.25);
 }
 
 /* Badges */
@@ -150,7 +150,7 @@ textarea:focus {
     padding: 2rem;
     border-radius: 0.5rem;
     margin-bottom: 2rem;
-    box-shadow: 10px 10px 20px rgb(53, 53, 53);
+    box-shadow: 10px 8px 20px rgb(53, 53, 53);
 }
 
 .jumbotron h1 {
