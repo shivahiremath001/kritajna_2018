@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Sum
 from .models import Order, OrderItem
+from .models import Cart
 from products.models import Product
 from .forms import OrderForm
 from payments.models import Payment
@@ -11,6 +12,8 @@ from django.utils import timezone
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from .models import OrderMessage
 from django.views.decorators.http import require_POST
+from django.contrib import messages
+from django.http import HttpResponseForbidden
 
 
 @login_required(login_url='login')
@@ -106,6 +109,61 @@ def create_order(request):
 
 
 @login_required(login_url='login')
+def cart_view(request):
+    if request.user.role != 'customer':
+        messages.error(request, 'Only customers have carts')
+        return redirect('home')
+
+    cart, _ = Cart.objects.get_or_create(user=request.user)
+    context = {'cart': cart}
+    return render(request, 'orders/cart.html', context)
+
+
+@login_required(login_url='login')
+def remove_from_cart(request, pk):
+    if request.user.role != 'customer':
+        messages.error(request, 'Only customers can modify the cart')
+        return redirect('home')
+
+    cart, _ = Cart.objects.get_or_create(user=request.user)
+    product = get_object_or_404(Product, pk=pk)
+    cart.remove_product(product)
+    messages.info(request, f'Removed {product.name} from cart')
+    return redirect('cart_view')
+
+
+@login_required(login_url='login')
+def checkout(request):
+    if request.user.role != 'customer':
+        messages.error(request, 'Only customers can checkout')
+        return redirect('home')
+
+    cart, _ = Cart.objects.get_or_create(user=request.user)
+
+    if request.method == 'POST':
+        customer_location = request.POST.get('customer_location', '').strip()
+        if not cart.items.exists():
+            messages.error(request, 'Your cart is empty')
+            return redirect('cart_view')
+
+        if not customer_location:
+            messages.error(request, 'Please provide a delivery location')
+            return redirect('cart_view')
+
+        try:
+            order = cart.create_order(customer_location=customer_location)
+        except ValueError as e:
+            messages.error(request, str(e))
+            return redirect('cart_view')
+
+        messages.success(request, f'Order #{order.id} created successfully')
+        return redirect('order_detail', pk=order.pk)
+
+    # GET: show simple checkout form on cart page
+    return redirect('cart_view')
+
+
+@login_required(login_url='login')
 def order_detail(request, pk):
     """Order detail view"""
     order = get_object_or_404(Order, pk=pk)
@@ -180,15 +238,31 @@ def farmer_accept_order(request, pk):
         return redirect('home')
 
     if request.method == 'POST':
+        # Farmer accepts all pending items in this order that belong to them
+        accepted_items = []
         with transaction.atomic():
-            order.status = 'confirmed'
-            # assign first available delivery partner (simple strategy)
-            from users.models import User
-            partner = User.objects.filter(role='delivery_partner', is_active=True).exclude(pk=request.user.pk).first()
-            if partner:
-                order.delivery_partner = partner
+            items = order.items.select_related('product').filter(product__farmer=request.user, status=OrderItem.STATUS_PENDING)
+            for item in items:
+                try:
+                    item.accept_by_farmer(request.user)
+                    accepted_items.append(item)
+                except PermissionError:
+                    continue
+
+            # Recalculate order total based on accepted items (final billed amount)
+            order.total_amount = order.calculate_total(accepted_only=True)
+
+            # If no items are pending (all accepted or rejected), mark order confirmed and assign delivery partner
+            if not order.items.filter(status=OrderItem.STATUS_PENDING).exists():
+                order.status = 'confirmed'
+                from users.models import User
+                partner = User.objects.filter(role='delivery_partner', is_active=True).exclude(pk=request.user.pk).first()
+                if partner:
+                    order.delivery_partner = partner
+
             order.save()
-        messages.success(request, f'Order #{order.id} accepted.')
+
+        messages.success(request, f'Accepted {len(accepted_items)} item(s) in Order #{order.id}.')
     return redirect('farmer_dashboard')
 
 
@@ -201,21 +275,27 @@ def farmer_reject_order(request, pk):
         return redirect('home')
 
     if request.method == 'POST':
+        # Farmer rejects only their items; restock those items and update order total
+        rejected_count = 0
         with transaction.atomic():
-            # Restock products sold by this farmer
-            for item in order.items.select_related('product'):
-                prod = item.product
-                # Only restock items owned by this farmer
-                if prod.farmer == request.user:
-                    prod.quantity += item.quantity
-                    if prod.quantity > 0:
-                        prod.sold_out = False
-                    prod.save()
+            items = order.items.select_related('product').filter(product__farmer=request.user, status=OrderItem.STATUS_PENDING)
+            for item in items:
+                try:
+                    item.reject_by_farmer(request.user)
+                    rejected_count += 1
+                except PermissionError:
+                    continue
 
-            order.status = 'cancelled'
+            # Recalculate order total based on accepted items (final billed amount)
+            order.total_amount = order.calculate_total(accepted_only=True)
+
+            # Do not cancel entire order; keep status pending until all farmers respond
+            # If all items rejected, cancel the order
+            if not order.items.exclude(status=OrderItem.STATUS_REJECTED).exists():
+                order.status = 'cancelled'
             order.save()
-            # Optionally: create refund/payment reversal (out of scope)
-        messages.info(request, f'Order #{order.id} rejected and cancelled.')
+
+        messages.info(request, f'Rejected {rejected_count} item(s) in Order #{order.id}.')
     return redirect('farmer_dashboard')
 
 
@@ -250,6 +330,59 @@ def respond_delivery(request, pk, action):
     else:
         messages.error(request, 'Invalid action')
         return redirect('delivery_orders')
+
+
+@login_required(login_url='login')
+def farmer_accept_item(request, item_pk):
+    """Accept a single OrderItem by its farmer."""
+    item = get_object_or_404(OrderItem, pk=item_pk)
+    order = item.order
+    if request.user.role != 'farmer' or item.product.farmer != request.user:
+        return HttpResponseForbidden('Not allowed')
+
+    if request.method == 'POST':
+        try:
+            item.accept_by_farmer(request.user)
+        except PermissionError:
+            messages.error(request, 'Not allowed to accept this item')
+            return redirect('farmer_dashboard')
+
+        # Recalculate order total (accepted items only) and possibly confirm whole order
+        order.total_amount = order.calculate_total(accepted_only=True)
+        if not order.items.filter(status=OrderItem.STATUS_PENDING).exists():
+            order.status = 'confirmed'
+            # assign delivery partner if missing
+            from users.models import User
+            partner = User.objects.filter(role='delivery_partner', is_active=True).exclude(pk=request.user.pk).first()
+            if partner:
+                order.delivery_partner = partner
+        order.save()
+        messages.success(request, 'Item accepted')
+    return redirect('farmer_dashboard')
+
+
+@login_required(login_url='login')
+def farmer_reject_item(request, item_pk):
+    """Reject a single OrderItem by its farmer."""
+    item = get_object_or_404(OrderItem, pk=item_pk)
+    order = item.order
+    if request.user.role != 'farmer' or item.product.farmer != request.user:
+        return HttpResponseForbidden('Not allowed')
+
+    if request.method == 'POST':
+        try:
+            item.reject_by_farmer(request.user)
+        except PermissionError:
+            messages.error(request, 'Not allowed to reject this item')
+            return redirect('farmer_dashboard')
+
+        order.total_amount = order.calculate_total(accepted_only=True)
+        # If all items rejected, cancel order
+        if not order.items.exclude(status=OrderItem.STATUS_REJECTED).exists():
+            order.status = 'cancelled'
+        order.save()
+        messages.success(request, 'Item rejected and restocked')
+    return redirect('farmer_dashboard')
 
 
 @login_required(login_url='login')
@@ -302,7 +435,7 @@ def update_order_status(request, pk, status):
             # Pay farmers their share and delivery partner. Avoid duplicating payments by checking existing descriptions.
             # Farmers: grouped by farmer
             earnings_by_farmer = {}
-            for item in order.items.select_related('product__farmer'):
+            for item in order.items.select_related('product__farmer').filter(status=OrderItem.STATUS_ACCEPTED):
                 farmer = item.product.farmer
                 amt = (item.quantity * item.price_per_unit).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
                 earnings_by_farmer.setdefault(farmer, Decimal('0.00'))

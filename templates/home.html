@@ -10,7 +10,7 @@
     <form method="get" action="{% url 'search_results' %}" class="mb-3">
         <div class="input-group">
             <input type="text" name="q" class="form-control" placeholder="Search products, descriptions, categories...">
-            <button class="btn btn-primary" type="submit">Search</button>
+            <button class="btn btn-primary" type="submit" style="background-color: rgb(10, 173, 10); margin-left: 10px; border: none;">Search</button>
         </div>
     </form>
     
@@ -38,10 +38,10 @@
         <h3>Shop by Category</h3>
         <div class="category-slider d-flex overflow-auto py-2">
             {% for cat in categories %}
-                <a class="category-item text-center me-3" href="{% url 'category_detail' cat.slug %}" style="min-width:140px; text-decoration:none; color:inherit;">
-                    <div class="card shadow-sm">
+                <a class="category-item text-center me-3" href="{% url 'category_detail' cat.slug %}" style="min-width:195px; border-radius: 0.5rem; box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); text-decoration:none; color:inherit;">
+                    <div class="card shadow-sm" style="width: 100%; ">
                         {% if cat.image %}
-                            <img src="{{ cat.image.url }}" class="card-img-top" style="height:100px; object-fit:cover;">
+                            <img src="{{ cat.image.url }}" class="card-img-top" style="height:150px; width: 100%; object-fit:cover;">
                         {% else %}
                             <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height:100px;">📦</div>
                         {% endif %}

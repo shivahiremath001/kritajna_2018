@@ -143,16 +143,24 @@
                                 <td>{{ order.created_at|date:"M d, Y" }}</td>
                                 <td>
                                     <a href="{% url 'order_detail' order.pk %}" class="btn btn-sm btn-info">View</a>
-                                    {% if order.status == 'pending' %}
-                                        <form method="post" action="{% url 'farmer_accept_order' order.pk %}" style="display:inline-block; margin-left:6px;">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-sm btn-success">Accept</button>
-                                        </form>
-                                        <form method="post" action="{% url 'farmer_reject_order' order.pk %}" style="display:inline-block; margin-left:6px;">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-sm btn-danger">Reject</button>
-                                        </form>
-                                    {% endif %}
+                                    {% comment %} Show per-item actions for this farmer inside the order row {% endcomment %}
+                                    {% for item in order.items.all %}
+                                        {% if item.product.farmer == user %}
+                                            <div class="mt-2">
+                                                <strong>{{ item.product.name }}</strong> — {{ item.get_status_display }}
+                                                {% if item.status == 'pending' %}
+                                                    <form method="post" action="{% url 'farmer_accept_item' item.pk %}" style="display:inline-block; margin-left:6px;">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-sm btn-success">Accept</button>
+                                                    </form>
+                                                    <form method="post" action="{% url 'farmer_reject_item' item.pk %}" style="display:inline-block; margin-left:6px;">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-sm btn-danger">Reject</button>
+                                                    </form>
+                                                {% endif %}
+                                            </div>
+                                        {% endif %}
+                                    {% endfor %}
                                 </td>
                             </tr>
                         {% endfor %}

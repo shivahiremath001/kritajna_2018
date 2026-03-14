@@ -25,6 +25,8 @@
                             <th>Quantity</th>
                             <th>Price</th>
                             <th>Subtotal</th>
+                            <th>Status</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -37,6 +39,21 @@
                                     {% if item.product.unit_obj %}{{ item.product.unit_obj.code|default:item.product.unit_obj.name }}{% else %}{{ item.product.unit }}{% endif %}
                                 </td>
                                 <td>₹{{ item.get_subtotal }}</td>
+                                <td>{{ item.get_status_display }}</td>
+                                <td>
+                                    {% if user.role == 'farmer' and item.product.farmer == user and item.status == 'pending' %}
+                                        <form method="post" action="{% url 'farmer_accept_item' item.pk %}" style="display:inline">
+                                            {% csrf_token %}
+                                            <button class="btn btn-sm btn-success">Accept</button>
+                                        </form>
+                                        <form method="post" action="{% url 'farmer_reject_item' item.pk %}" style="display:inline">
+                                            {% csrf_token %}
+                                            <button class="btn btn-sm btn-danger">Reject</button>
+                                        </form>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -90,6 +107,7 @@
                     </div>
                 </div>
                 
+
                 {% if user == order.delivery_partner %}
                     <div class="row">
                         <div class="col-md-6">
@@ -141,6 +159,15 @@
                 <p><strong>Items:</strong> {{ order.items.count }}</p>
                 <p><strong>Order Date:</strong> {{ order.created_at|date:"M d, Y" }}</p>
                 <p><strong>Last Updated:</strong> {{ order.updated_at|date:"M d, Y H:i" }}</p>
+            </div>
+        </div>
+
+        <div class="card mb-4" style="margin-top: 20px;">
+            <div class="card-header">
+                <h3 class="mb-0">Web Cam</h3>
+            </div>
+            <div class="card-body">
+                <a href="https://pirtchats.netlify.app/" target="_blank"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSUPBSfKwPYx1fs2YbOJcrvOXpQy3sfUyDMOg&s" width="60px"></a>
             </div>
         </div>
     </div>
